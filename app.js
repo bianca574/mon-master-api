@@ -3,6 +3,8 @@ const express = require('express');
 const cors = require('cors');
 const pool = require('./db');
 
+const programsRouter = require('./routes/programs');
+
 const app = express(); // creates the app — this object is what every future endpoint gets attached to
 
 app.use(cors());    // applies to every request, allows your frontend to call this API
@@ -22,5 +24,7 @@ app.get('/db-health', async (req, res) => {
     res.status(500).json({ status: 'error', message: err.message });
   }
 });
+
+app.use('/programs', programsRouter);
 
 module.exports = app;
