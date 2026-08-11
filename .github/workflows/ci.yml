@@ -24,4 +24,4 @@ jobs:
         with:
           node-version: 20
       - run: npm ci
-      - run: node -e "require('./server.js')"
+      - run: node -e "require('./app.js'); console.log('App loaded OK')"
