@@ -30,5 +30,9 @@ app.get('/db-health', async (req, res) => {
 });
 
 app.use('/programs', programsRouter);
+app.use('/recommendations', recommendationsRouter);
+app.use('/criteria', criteriaRouter);
+app.use('/letters', lettersRouter);
+app.use('/journal', journalRouter);
 
 module.exports = app;
