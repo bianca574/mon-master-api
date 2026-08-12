@@ -4,6 +4,10 @@ const cors = require('cors');
 const pool = require('./db');
 
 const programsRouter = require('./routes/programs');
+const recommendationsRouter = require('./routes/recommendations');
+const criteriaRouter = require('./routes/criteria');
+const lettersRouter = require('./routes/letters');
+const journalRouter = require('./routes/journal');
 
 const app = express(); // creates the app — this object is what every future endpoint gets attached to
 
@@ -12,7 +16,7 @@ app.use(cors());    // applies to every request, allows your frontend to call th
 app.use(express.json()); // without this, req.body would be undefined; this tells Express to parse incoming JSON automatically
 
 app.get('/health', (req, res) => {  // defines one endpoint: when a GET request hits /health, run this function
-                                   // req is the incoming request, res is the response
+  // req is the incoming request, res is the response
   res.json({ status: 'ok', time: new Date().toISOString() }); // sends back JSON, and sets the right headers automatically
 });
 
