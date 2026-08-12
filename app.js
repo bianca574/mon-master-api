@@ -8,6 +8,7 @@ const recommendationsRouter = require('./routes/recommendations');
 const criteriaRouter = require('./routes/criteria');
 const lettersRouter = require('./routes/letters');
 const journalRouter = require('./routes/journal');
+const authRouter = require('./routes/auth');
 
 const app = express(); // creates the app — this object is what every future endpoint gets attached to
 
@@ -34,5 +35,6 @@ app.use('/recommendations', recommendationsRouter);
 app.use('/criteria', criteriaRouter);
 app.use('/letters', lettersRouter);
 app.use('/journal', journalRouter);
+app.use('/auth', authRouter);
 
 module.exports = app;
