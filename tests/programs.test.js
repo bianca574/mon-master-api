@@ -9,7 +9,7 @@ beforeEach(async () => {
     await pool.query('TRUNCATE users, programs, documents RESTART IDENTITY CASCADE');
     const signup = await request(app)
         .post('/auth/signup')
-        .send({ email: 'test@example.com', password: 'testpass123' });
+        .send({ email: 'test@example.com', password: 'testpass123', name: 'Test User' });
     token = signup.body.token;
 });
 
