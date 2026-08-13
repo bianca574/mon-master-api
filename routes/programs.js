@@ -26,9 +26,16 @@ function mapDocument(row) {
 // GET /programs — list all, each with its documents attached
 router.get('/', async (req, res) => {
   try {
-    const programsResult = await pool.query('SELECT * FROM programs ORDER BY created_at DESC');
-    const documentsResult = await pool.query('SELECT * FROM documents');
-
+    const programsResult = await pool.query(
+      'SELECT * FROM programs WHERE user_id = $1 ORDER BY created_at DESC',
+      [req.userId]
+    );
+    const documentsResult = await pool.query(
+      `SELECT d.* FROM documents d
+      JOIN programs p ON d.program_id = p.id
+      WHERE p.user_id = $1`,
+      [req.userId]
+    );
     const programs = programsResult.rows.map((row) => {
       const program = mapProgram(row);
       program.documents = documentsResult.rows
@@ -46,7 +53,10 @@ router.get('/', async (req, res) => {
 // GET /programs/:id — one program with its documents
 router.get('/:id', async (req, res) => {
   try {
-    const programResult = await pool.query('SELECT * FROM programs WHERE id = $1', [req.params.id]);
+    const programResult = await pool.query(
+      'SELECT * FROM programs WHERE id = $1 AND user_id = $2',
+      [req.params.id, req.userId]
+    );
     if (programResult.rows.length === 0) {
       return res.status(404).json({ error: 'Program not found' });
     }
@@ -67,10 +77,10 @@ router.post('/', async (req, res) => {
   try {
     const { university, programName, status, deadline, website, notes, tags } = req.body;
     const result = await pool.query(
-      `INSERT INTO programs (university, program_name, status, deadline, website, notes, tags)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO programs (user_id, university, program_name, status, deadline, website, notes, tags)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING *`,
-      [university, programName, status || 'not_started', deadline || null, website || '', notes || '', tags || []]
+      [req.userId, university, programName, status || 'not_started', deadline || null, website || '', notes || '', tags || []]
     );
     res.status(201).json({ ...mapProgram(result.rows[0]), documents: [] });
   } catch (err) {
@@ -84,11 +94,11 @@ router.put('/:id', async (req, res) => {
     const { university, programName, status, deadline, website, notes, tags } = req.body;
     const result = await pool.query(
       `UPDATE programs
-       SET university = $1, program_name = $2, status = $3, deadline = $4,
+      SET university = $1, program_name = $2, status = $3, deadline = $4,
            website = $5, notes = $6, tags = $7, updated_at = now()
-       WHERE id = $8
-       RETURNING *`,
-      [university, programName, status, deadline || null, website, notes, tags || [], req.params.id]
+      WHERE id = $8 AND user_id = $9
+      RETURNING *`,
+      [university, programName, status, deadline || null, website, notes, tags || [], req.params.id, req.userId]
     );
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Program not found' });
@@ -102,7 +112,10 @@ router.put('/:id', async (req, res) => {
 // DELETE /programs/:id
 router.delete('/:id', async (req, res) => {
   try {
-    const result = await pool.query('DELETE FROM programs WHERE id = $1 RETURNING id', [req.params.id]);
+    const result = await pool.query(
+      'DELETE FROM programs WHERE id = $1 AND user_id = $2 RETURNING id',
+      [req.params.id, req.userId]
+    );
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Program not found' });
     }
@@ -117,6 +130,14 @@ router.delete('/:id', async (req, res) => {
 // POST /programs/:id/documents — add a document
 router.post('/:id/documents', async (req, res) => {
   try {
+    const ownerCheck = await pool.query(
+      'SELECT id FROM programs WHERE id = $1 AND user_id = $2',
+      [req.params.id, req.userId]
+    );
+    if (ownerCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Program not found' });
+    }
+
     const result = await pool.query(
       'INSERT INTO documents (program_id, label) VALUES ($1, $2) RETURNING *',
       [req.params.id, req.body.label]
@@ -131,8 +152,11 @@ router.post('/:id/documents', async (req, res) => {
 router.patch('/:id/documents/:docId', async (req, res) => {
   try {
     const result = await pool.query(
-      'UPDATE documents SET done = NOT done WHERE id = $1 AND program_id = $2 RETURNING *',
-      [req.params.docId, req.params.id]
+      `UPDATE documents SET done = NOT done
+      WHERE id = $1 AND program_id = $2
+      AND program_id IN (SELECT id FROM programs WHERE user_id = $3)
+      RETURNING *`,
+      [req.params.docId, req.params.id, req.userId]
     );
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Document not found' });
@@ -146,7 +170,15 @@ router.patch('/:id/documents/:docId', async (req, res) => {
 // DELETE /programs/:id/documents/:docId
 router.delete('/:id/documents/:docId', async (req, res) => {
   try {
-    await pool.query('DELETE FROM documents WHERE id = $1 AND program_id = $2', [req.params.docId, req.params.id]);
+    const result = await pool.query(
+      `DELETE FROM documents WHERE id = $1 AND program_id = $2
+      AND program_id IN (SELECT id FROM programs WHERE user_id = $3)
+      RETURNING id`,
+      [req.params.docId, req.params.id, req.userId]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Document not found' });
+    }
     res.status(204).send();
   } catch (err) {
     res.status(500).json({ error: err.message });

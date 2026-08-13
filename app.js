@@ -10,6 +10,8 @@ const lettersRouter = require('./routes/letters');
 const journalRouter = require('./routes/journal');
 const authRouter = require('./routes/auth');
 
+const requireAuth = require('./middleware/auth');
+
 const app = express(); // creates the app — this object is what every future endpoint gets attached to
 
 app.use(cors());    // applies to every request, allows your frontend to call this API
@@ -30,11 +32,12 @@ app.get('/db-health', async (req, res) => {
   }
 });
 
-app.use('/programs', programsRouter);
-app.use('/recommendations', recommendationsRouter);
-app.use('/criteria', criteriaRouter);
-app.use('/letters', lettersRouter);
-app.use('/journal', journalRouter);
+app.use('/programs', requireAuth, programsRouter);
+app.use('/recommendations', requireAuth, recommendationsRouter);
+app.use('/criteria', requireAuth, criteriaRouter);
+app.use('/letters', requireAuth, lettersRouter);
+app.use('/journal', requireAuth, journalRouter);
+
 app.use('/auth', authRouter);
 
 module.exports = app;

@@ -51,13 +51,7 @@ jobs:
       - run: psql -h localhost -U postgres -d monmaster_test -f schema.sql
         env:
           PGPASSWORD: postgres
-      - run: |
-          psql -h localhost -U postgres -d monmaster_test -c "ALTER TABLE programs ALTER COLUMN user_id DROP NOT NULL;"
-          psql -h localhost -U postgres -d monmaster_test -c "ALTER TABLE recommendations ALTER COLUMN user_id DROP NOT NULL;"
-          psql -h localhost -U postgres -d monmaster_test -c "ALTER TABLE criteria ALTER COLUMN user_id DROP NOT NULL;"
-          psql -h localhost -U postgres -d monmaster_test -c "ALTER TABLE journal_entries ALTER COLUMN user_id DROP NOT NULL;"
-        env:
-          PGPASSWORD: postgres
       - run: npm run test
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/monmaster_test
+          JWT_SECRET: test_secret_for_ci

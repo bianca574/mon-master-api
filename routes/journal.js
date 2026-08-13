@@ -15,7 +15,10 @@ function mapEntry(row) {
 
 router.get('/', async (req, res) => {
     try {
-        const result = await pool.query('SELECT * FROM journal_entries ORDER BY entry_date DESC');
+        const result = await pool.query(
+            'SELECT * FROM journal_entries WHERE user_id = $1 ORDER BY entry_date DESC',
+            [req.userId]
+        );
         res.json(result.rows.map(mapEntry));
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -26,8 +29,8 @@ router.post('/', async (req, res) => {
     try {
         const { programId, date, text } = req.body;
         const result = await pool.query(
-            'INSERT INTO journal_entries (program_id, entry_date, text) VALUES ($1, $2, $3) RETURNING *',
-            [programId || null, date, text]
+            'INSERT INTO journal_entries (user_id, program_id, entry_date, text) VALUES ($1, $2, $3, $4) RETURNING *',
+            [req.userId, programId || null, date, text]
         );
         res.status(201).json(mapEntry(result.rows[0]));
     } catch (err) {
@@ -37,7 +40,10 @@ router.post('/', async (req, res) => {
 
 router.delete('/:id', async (req, res) => {
     try {
-        const result = await pool.query('DELETE FROM journal_entries WHERE id = $1 RETURNING id', [req.params.id]);
+        const result = await pool.query(
+            'DELETE FROM journal_entries WHERE id = $1 AND user_id = $2 RETURNING id',
+            [req.params.id, req.userId]
+        );
         if (result.rows.length === 0) return res.status(404).json({ error: 'Entry not found' });
         res.status(204).send();
     } catch (err) {

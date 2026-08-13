@@ -19,8 +19,16 @@ function mapRecommendation(row, programIds) {
 
 router.get('/', async (req, res) => {
   try {
-    const recsResult = await pool.query('SELECT * FROM recommendations ORDER BY created_at DESC');
-    const linksResult = await pool.query('SELECT * FROM recommendation_programs');
+    const recsResult = await pool.query(
+      'SELECT * FROM recommendations WHERE user_id = $1 ORDER BY created_at DESC',
+      [req.userId]
+    );
+    const linksResult = await pool.query(
+      `SELECT rp.* FROM recommendation_programs rp
+       JOIN recommendations r ON rp.recommendation_id = r.id
+       WHERE r.user_id = $1`,
+      [req.userId]
+    );
 
     const recommendations = recsResult.rows.map((row) => {
       const programIds = linksResult.rows
@@ -42,9 +50,9 @@ router.post('/', async (req, res) => {
     await client.query('BEGIN');
 
     const result = await client.query(
-      `INSERT INTO recommendations (name, institution, status, asked_date, notes)
-       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [name, institution || '', status || 'not_asked', askedDate || null, notes || '']
+      `INSERT INTO recommendations (user_id, name, institution, status, asked_date, notes)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [req.userId, name, institution || '', status || 'not_asked', askedDate || null, notes || '']
     );
     const rec = result.rows[0];
 
@@ -74,8 +82,8 @@ router.put('/:id', async (req, res) => {
     const result = await client.query(
       `UPDATE recommendations
        SET name = $1, institution = $2, status = $3, asked_date = $4, notes = $5, updated_at = now()
-       WHERE id = $6 RETURNING *`,
-      [name, institution, status, askedDate || null, notes, req.params.id]
+       WHERE id = $6 AND user_id = $7 RETURNING *`,
+      [name, institution, status, askedDate || null, notes, req.params.id, req.userId]
     );
     if (result.rows.length === 0) {
       await client.query('ROLLBACK');
@@ -102,10 +110,11 @@ router.put('/:id', async (req, res) => {
 
 router.delete('/:id', async (req, res) => {
   try {
-    const result = await pool.query('DELETE FROM recommendations WHERE id = $1 RETURNING id', [req.params.id]);
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Recommendation not found' });
-    }
+    const result = await pool.query(
+      'DELETE FROM recommendations WHERE id = $1 AND user_id = $2 RETURNING id',
+      [req.params.id, req.userId]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Recommendation not found' });
     res.status(204).send();
   } catch (err) {
     res.status(500).json({ error: err.message });
