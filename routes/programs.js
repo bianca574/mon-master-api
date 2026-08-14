@@ -185,4 +185,23 @@ router.delete('/:id/documents/:docId', async (req, res) => {
   }
 });
 
+router.patch('/:id/scores', async (req, res) => {
+  try {
+    const { criteriaId, score } = req.body;
+    const result = await pool.query(
+      `UPDATE programs
+       SET scores = jsonb_set(scores, $1, to_jsonb($2::int)), updated_at = now()
+       WHERE id = $3 AND user_id = $4
+       RETURNING *`,
+      [`{${criteriaId}}`, score, req.params.id, req.userId]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Program not found' });
+    }
+    res.json(mapProgram(result.rows[0]));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;
