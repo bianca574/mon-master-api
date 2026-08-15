@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const pool = require('../db');
+const requireAuth = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -51,6 +52,22 @@ router.post('/login', async (req, res) => {
 
         const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '30d' });
         res.json({ token, user: { id: user.id, email: user.email, name: user.name } });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+router.put('/me', requireAuth, async (req, res) => {
+    try {
+        const { name } = req.body;
+        if (!name || !name.trim()) {
+            return res.status(400).json({ error: 'Name is required' });
+        }
+        const result = await pool.query(
+            'UPDATE users SET name = $1 WHERE id = $2 RETURNING id, email, name',
+            [name.trim(), req.userId]
+        );
+        res.json({ user: result.rows[0] });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
