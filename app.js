@@ -12,6 +12,8 @@ const authRouter = require('./routes/auth');
 
 const requireAuth = require('./middleware/auth');
 
+const backupRouter = require('./routes/backup');
+
 const app = express(); // creates the app — this object is what every future endpoint gets attached to
 
 app.use(cors());    // applies to every request, allows your frontend to call this API
@@ -39,5 +41,7 @@ app.use('/letters', requireAuth, lettersRouter);
 app.use('/journal', requireAuth, journalRouter);
 
 app.use('/auth', authRouter);
+
+app.use('/backup', backupRouter);
 
 module.exports = app;
