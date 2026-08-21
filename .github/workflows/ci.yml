@@ -55,3 +55,4 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/monmaster_test
           JWT_SECRET: test_secret_for_ci
+          RESEND_API_KEY: re_test_placeholder_not_real

@@ -7,7 +7,10 @@ const crypto = require('crypto');
 const { Resend } = require('resend');
 
 const router = express.Router();
-const resend = new Resend(process.env.RESEND_API_KEY);
+
+function getResendClient() {
+    return new Resend(process.env.RESEND_API_KEY);
+}
 
 router.post('/signup', async (req, res) => {
     try {
@@ -98,16 +101,17 @@ router.post('/request-reset', async (req, res) => {
 
             const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${rawToken}`;
 
+            const resend = getResendClient();
             await resend.emails.send({
                 from: 'MonMaster Companion <onboarding@resend.dev>',
                 to: email,
                 subject: 'Réinitialisation de votre mot de passe',
                 html: `
-            <p>Bonjour,</p>
-            <p>Vous avez demandé la réinitialisation de votre mot de passe.</p>
-            <p><a href="${resetUrl}">Cliquez ici pour choisir un nouveau mot de passe</a></p>
-            <p>Ce lien expire dans 1 heure. Si vous n'êtes pas à l'origine de cette demande, ignorez cet email.</p>
-          `,
+                <p>Bonjour,</p>
+                <p>Vous avez demandé la réinitialisation de votre mot de passe.</p>
+                <p><a href="${resetUrl}">Cliquez ici pour choisir un nouveau mot de passe</a></p>
+                <p>Ce lien expire dans 1 heure. Si vous n'êtes pas à l'origine de cette demande, ignorez cet email.</p>
+              `,
             });
         }
 
