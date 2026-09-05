@@ -1,4 +1,4 @@
-# MonMaster API
+# MonMaster API (Août 2026)
 
 API backend de [MonMaster Companion](https://github.com/bianca574/mon-master-companion) :
 authentification, candidatures, documents, recommandations, critères de
