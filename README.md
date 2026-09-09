@@ -1,8 +1,6 @@
 # MonMaster API (Août 2026)
 
-API backend de [MonMaster Companion](https://github.com/bianca574/mon-master-companion) :
-authentification, candidatures, documents, recommandations, critères de
-décision, lettres de motivation et journal.
+API backend de [MonMaster Companion](https://github.com/bianca574/mon-master-companion).
 
 API en ligne : https://mon-master-api.vercel.app
 
